@@ -4,26 +4,37 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TravelKaro - AI-Powered Travel Planning</title>
+
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet"
+    >
+
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
     <style>
         body {
             font-family: 'Poppins', sans-serif;
             background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
             min-height: 100vh;
         }
+
         .glow-text {
             text-shadow: 0 0 10px rgba(79, 192, 210, 0.7);
         }
+
         .btn-glow {
             box-shadow: 0 0 15px rgba(79, 192, 210, 0.7);
             transition: all 0.3s ease;
         }
+
         .btn-glow:hover {
             box-shadow: 0 0 25px rgba(79, 192, 210, 0.9);
             transform: translateY(-2px);
         }
+
         .ai-highlight {
             background: linear-gradient(90deg, #4fc0d2, #a162e8);
             -webkit-background-clip: text;
@@ -31,73 +42,182 @@
             color: transparent;
             font-weight: 600;
         }
+
+        /*
+          Vapi's script normally adds its own floating button.
+          We hide it because we are using your main TravelKaro button instead.
+        */
+        .vapi-btn {
+            display: none !important;
+        }
     </style>
 </head>
+
 <body class="flex items-center justify-center p-4">
-  <!-- Instructional Text and Arrow -->
-<div class="absolute top-4 left-4 bg-white/90 text-gray-800 rounded px-3 py-2 shadow text-sm font-medium animate-bounce z-50">
-    ⬆️ Allow Microphone permissions to talk to AI
-</div>
+
+    <div class="absolute top-4 left-4 bg-white/90 text-gray-800 rounded px-3 py-2 shadow text-sm font-medium animate-bounce z-50">
+        🎙️ Allow microphone permission to talk to AI
+    </div>
 
     <div class="text-center max-w-2xl mx-auto">
-        <h1 class="text-5xl md:text-6xl font-bold text-gray-800 mb-4 glow-text">TravelKaro</h1>
-        
+        <h1 class="text-5xl md:text-6xl font-bold text-gray-800 mb-4 glow-text">
+            TravelKaro
+        </h1>
+
         <div class="mb-8">
-            <p class="text-xl md:text-2xl text-gray-600 mb-2">Making your travel decisions simple</p>
-            <p class="text-2xl md:text-3xl font-medium ai-highlight">WITH AI</p>
+            <p class="text-xl md:text-2xl text-gray-600 mb-2">
+                Making your travel decisions simple
+            </p>
+
+            <p class="text-2xl md:text-3xl font-medium ai-highlight">
+                WITH AI
+            </p>
         </div>
-        
-        <button id="planButton" class="btn-glow bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-bold py-4 px-8 rounded-full text-lg md:text-xl">
+
+        <button
+            id="planButton"
+            class="btn-glow bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-bold py-4 px-8 rounded-full text-lg md:text-xl"
+        >
             Let's plan your vacations
         </button>
-        
+
+        <p id="statusText" class="mt-5 text-gray-600 text-sm min-h-6">
+            Preparing your AI travel planner...
+        </p>
+
         <div class="mt-12 text-gray-500 text-sm">
             <p>Powered by AI travel assistant technology</p>
         </div>
     </div>
 
     <script>
-        document.getElementById('planButton').addEventListener('click', function() {
-            // Initialize Vapi AI when button is clicked
-            var vapiInstance = null;
-            const assistant = "524ce888-1fdd-4cf7-a0e2-a7bbaab721b2";
-            const apiKey = "adcc4dc0-2e7c-4b2c-ab26-9b9b09a6d1fd";
-            const buttonConfig = {};
-            
-            (function (d, t) {
-                var g = document.createElement(t),
-                    s = d.getElementsByTagName(t)[0];
-                g.src = "https://cdn.jsdelivr.net/gh/VapiAI/html-script-tag@latest/dist/assets/index.js";
-                g.defer = true;
-                g.async = true;
-                s.parentNode.insertBefore(g, s);
-                
-                g.onload = function () {
-                    vapiInstance = window.vapiSDK.run({
-                        apiKey: apiKey,
-                        assistant: assistant,
-                        config: buttonConfig,
+        // Your Vapi credentials
+        const assistantId = "ad60e890-36cb-4239-8a13-e8b38b8d60ca";
+        const publicApiKey = "1ab129e3-0550-4483-be67-3557f1a32d32";
+
+        const planButton = document.getElementById("planButton");
+        const statusText = document.getElementById("statusText");
+
+        let vapiInstance = null;
+        let isCallActive = false;
+        let isVapiReady = false;
+
+        function setButtonToStartState() {
+            planButton.innerText = "Let's plan your vacations";
+
+            planButton.classList.remove("from-red-500", "to-rose-600");
+            planButton.classList.add("from-cyan-500", "to-blue-600");
+        }
+
+        function setButtonToEndState() {
+            planButton.innerText = "End conversation";
+
+            planButton.classList.remove("from-cyan-500", "to-blue-600");
+            planButton.classList.add("from-red-500", "to-rose-600");
+        }
+
+        // Load Vapi only once when the website opens
+        (function loadVapiScript(documentObject, tagName) {
+            const script = documentObject.createElement(tagName);
+            const firstScript = documentObject.getElementsByTagName(tagName)[0];
+
+            script.src =
+                "https://cdn.jsdelivr.net/gh/VapiAI/html-script-tag@latest/dist/assets/index.js";
+
+            script.defer = true;
+            script.async = true;
+
+            firstScript.parentNode.insertBefore(script, firstScript);
+
+            script.onload = function () {
+                vapiInstance = window.vapiSDK.run({
+                    apiKey: publicApiKey,
+                    assistant: assistantId,
+                    config: {}
+                });
+
+                if (!vapiInstance) {
+                    statusText.innerText = "Could not initialize TravelKaro. Please refresh the page.";
+                    return;
+                }
+
+                isVapiReady = true;
+                statusText.innerText = "TravelKaro is ready. Click the button to start.";
+
+                vapiInstance.on("call-start", () => {
+                    isCallActive = true;
+                    setButtonToEndState();
+                    statusText.innerText = "TravelKaro is listening...";
+                });
+
+                vapiInstance.on("call-end", () => {
+                    isCallActive = false;
+                    setButtonToStartState();
+                    statusText.innerText = "Your travel-planning conversation has ended.";
+
+                    confetti({
+                        particleCount: 100,
+                        spread: 70,
+                        origin: { y: 0.6 },
+                        colors: ["#4fc0d2", "#a162e8", "#ff6b6b", "#ffd166"]
                     });
-                    
-                    vapiInstance.on('call-ended', (e) => {
-                        if (e.type === 'hangup') {
-                            confetti({
-                                particleCount: 100,
-                                spread: 70,
-                                origin: { y: 0.6 },
-                                colors: ['#4fc0d2', '#a162e8', '#ff6b6b', '#ffd166']
-                            });
-                        }
-                    });
-                };
-            })(document, "script");
-            
-            // Button feedback
-            this.classList.add('animate-pulse');
-            setTimeout(() => {
-                this.classList.remove('animate-pulse');
-            }, 500);
+                });
+
+                vapiInstance.on("speech-start", () => {
+                    statusText.innerText = "TravelKaro is speaking...";
+                });
+
+                vapiInstance.on("speech-end", () => {
+                    statusText.innerText = "TravelKaro is listening...";
+                });
+
+                vapiInstance.on("error", (error) => {
+                    console.error("Vapi error:", error);
+
+                    isCallActive = false;
+                    setButtonToStartState();
+
+                    statusText.innerText =
+                        "Could not connect. Allow microphone access and try again.";
+                });
+            };
+
+            script.onerror = function () {
+                statusText.innerText =
+                    "Vapi could not load. Check your internet connection and refresh.";
+            };
+        })(document, "script");
+
+        planButton.addEventListener("click", async function () {
+            if (!isVapiReady || !vapiInstance) {
+                statusText.innerText = "TravelKaro is still loading. Please wait a moment.";
+                return;
+            }
+
+            try {
+                if (isCallActive) {
+                    vapiInstance.stop();
+                    return;
+                }
+
+                planButton.classList.add("animate-pulse");
+                statusText.innerText = "Connecting you to TravelKaro...";
+
+                await vapiInstance.start(assistantId);
+
+                setTimeout(() => {
+                    planButton.classList.remove("animate-pulse");
+                }, 500);
+
+            } catch (error) {
+                console.error("Could not start Vapi call:", error);
+
+                planButton.classList.remove("animate-pulse");
+                statusText.innerText =
+                    "Could not start the assistant. Allow microphone access and try again.";
+            }
         });
     </script>
+
 </body>
 </html>
