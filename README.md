@@ -1,17 +1,6 @@
 # ✈️ TravelKaro — AI-Powered Travel Planner
 
-<p align="center">
-  A voice-based AI travel assistant that helps make travel planning simpler.
-</p>
 
-<p align="center">
-  <a href="https://travel-karo-agent.vercel.app/">
-    <img src="https://img.shields.io/badge/Live%20Demo-Visit%20TravelKaro-0ea5e9?style=for-the-badge&logo=vercel&logoColor=white" alt="Live Demo" />
-  </a>
-  <a href="https://github.com/Devxnsh2005/TravelKaro-Agent">
-    <img src="https://img.shields.io/badge/Source%20Code-GitHub-181717?style=for-the-badge&logo=github&logoColor=white" alt="GitHub Repository" />
-  </a>
-</p>
 
 ---
 
